@@ -354,98 +354,333 @@
         </div>
     </div>
 
-    <script>
-        // Criar partículas
-        const particlesContainer = document.getElementById('particles');
-        for (let i = 0; i < 30; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
-            particle.style.width = Math.random() * 300 + 100 + 'px';
-            particle.style.height = particle.style.width;
-            particle.style.left = Math.random() * 100 + '%';
-            particle.style.top = Math.random() * 100 + '%';
-            particle.style.animationDelay = Math.random() * 5 + 's';
-            particlesContainer.appendChild(particle);
+<script>
+    // Criar partículas
+    const particlesContainer = document.getElementById('particles');
+    for (let i = 0; i < 30; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.width = Math.random() * 300 + 100 + 'px';
+        particle.style.height = particle.style.width;
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.top = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 5 + 's';
+        particlesContainer.appendChild(particle);
+    }
+
+    let posts = [
+        {
+            id: '1',
+            title: 'Mecha Sonic MK.1',
+            description: 'Mecha Sonic Mk.I é uma versão robótica do Sonic com um exoesqueleto volumoso cinza-prateado, pés laranja brilhantes e um único olho luminoso.',
+            imageUrl: 'https://i.imgur.com/Dxdpksg.png',
+            likes: 0,
+            dislikes: 0,
+            comments: [],
+            likedBy: [],
+            dislikedBy: []
+        },
+        {
+            id: '2',
+            title: 'Sonic MK.2',
+            description: 'Mecha Sonic Mk. 2 é uma réplica robótica alta e robusta de Sonic O Ouriço, construída pelo Dr. Eggman.',
+            imageUrl: 'https://i.imgur.com/FY1HPwK.png',
+            likes: 0,
+            dislikes: 0,
+            comments: [],
+            likedBy: [],
+            dislikedBy: []
+        },
+        {
+            id: '3',
+            title: 'mr careca',
+            description: 'A careca brilha tanto dificultando você olhar para o rocha',
+            imageUrl: 'https://i.imgur.com/eJWWZ99.png',
+            likes: 999,
+            dislikes: 0,
+            comments: [],
+            likedBy: [],
+            dislikedBy: []
+        },
+        {
+            id: '4',
+            title: 'Sonic Metal Calvice',
+            description: 'Habilidade: luz ultra violeta que sai da testa',
+            imageUrl: 'https://i.imgur.com/NNJam9V.png',
+            likes: 0,
+            dislikes: 0,
+            comments: [],
+            likedBy: [],
+            dislikedBy: []
+        }
+    ];
+
+    let selectedPost = null;
+    let commentText = '';
+
+    function getUserId() {
+        let userId = localStorage.getItem('userId');
+        if (!userId) {
+            userId = 'user_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('userId', userId);
+        }
+        return userId;
+    }
+
+    function savePosts() {
+        localStorage.setItem('socialPosts', JSON.stringify(posts));
+    }
+
+    function loadPosts() {
+        const stored = localStorage.getItem('socialPosts');
+        if (stored) {
+            const storedPosts = JSON.parse(stored);
+            posts = posts.map(post => {
+                const savedPost = storedPosts.find(p => p.id === post.id);
+                if (savedPost) {
+                    return {
+                        ...post,
+                        likes: savedPost.likes || post.likes,
+                        dislikes: savedPost.dislikes || post.dislikes,
+                        comments: savedPost.comments || [],
+                        likedBy: savedPost.likedBy || [],
+                        dislikedBy: savedPost.dislikedBy || []
+                    };
+                }
+                return post;
+            });
+        }
+        renderPosts();
+    }
+
+    async function sendDiscordWebhook(type, data) {
+        const webhookUrl = 'https://discord.com/api/webhooks/1434643466322972763/nEGF1MSqcpmvFFa1KGlQzL8vRLDRMD8bf3qvc2NenlTFzuB8gUIhZgO_WrxGVCm5_RNw';
+        
+        let embed = {};
+        
+        if (type === 'like') {
+            embed = {
+                title: '👍 Novo Like!',
+                description: `Alguém curtiu o post: **${data.postTitle}**`,
+                color: 3447003,
+                fields: [
+                    { name: 'Total de Likes', value: `${data.totalLikes}`, inline: true }
+                ],
+                timestamp: new Date().toISOString()
+            };
+        } else if (type === 'dislike') {
+            embed = {
+                title: '👎 Novo Dislike',
+                description: `Alguém não curtiu o post: **${data.postTitle}**`,
+                color: 15158332,
+                fields: [
+                    { name: 'Total de Dislikes', value: `${data.totalDislikes}`, inline: true }
+                ],
+                timestamp: new Date().toISOString()
+            };
+        } else if (type === 'comment') {
+            embed = {
+                title: '💬 Novo Comentário!',
+                description: `Um novo comentário foi adicionado em: **${data.postTitle}**`,
+                color: 10181046,
+                fields: [
+                    { name: 'Comentário', value: data.commentText, inline: false },
+                    { name: 'Total de Comentários', value: `${data.totalComments}`, inline: true }
+                ],
+                timestamp: new Date().toISOString()
+            };
         }
 
-        const posts = [
-            {
-                id: '1',
-                title: 'Mecha Sonic MK.1',
-                description: 'Mecha Sonic Mk.I é uma versão robótica do Sonic com um exoesqueleto volumoso cinza-prateado, pés laranja brilhantes e um único olho luminoso.',
-                imageUrl: 'https://i.imgur.com/Dxdpksg.png',
-                likes: 0,
-                dislikes: 0,
-                comments: []
-            },
-            {
-                id: '2',
-                title: 'Sonic MK.2',
-                description: 'Mecha Sonic Mk. 2 é uma réplica robótica alta e robusta de Sonic O Ouriço, construída pelo Dr. Eggman.',
-                imageUrl: 'https://i.imgur.com/FY1HPwK.png',
-                likes: 0,
-                dislikes: 0,
-                comments: []
-            },
-            {
-                id: '3',
-                title: 'mr careca',
-                description: 'A careca brilha tanto dificultando você olhar para o rocha',
-                imageUrl: 'https://i.imgur.com/eJWWZ99.png',
-                likes: 999,
-                dislikes: 0,
-                comments: []
-            },
-            {
-                id: '4',
-                title: 'Sonic Metal Calvice',
-                description: 'Habilidade: luz ultra violeta que sai da testa',
-                imageUrl: 'https://i.imgur.com/NNJam9V.png',
-                likes: 0,
-                dislikes: 0,
-                comments: []
-            }
-        ];
+        try {
+            await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ embeds: [embed] })
+            });
+        } catch (error) {
+            console.error('Erro ao enviar webhook:', error);
+        }
+    }
 
-        function renderPosts() {
-            const grid = document.getElementById('postsGrid');
-            grid.innerHTML = posts.map(post => `
+    function toggleLike(postId) {
+        const userId = getUserId();
+        const post = posts.find(p => p.id === postId);
+        if (!post) return;
+
+        const hasLiked = post.likedBy?.includes(userId);
+        const hasDisliked = post.dislikedBy?.includes(userId);
+
+        if (hasLiked) {
+            post.likes -= 1;
+            post.likedBy = post.likedBy.filter(id => id !== userId);
+        } else {
+            post.likes += 1;
+            post.likedBy = [...(post.likedBy || []), userId];
+            
+            sendDiscordWebhook('like', {
+                postTitle: post.title,
+                totalLikes: post.likes
+            });
+            
+            if (hasDisliked) {
+                post.dislikes -= 1;
+                post.dislikedBy = post.dislikedBy.filter(id => id !== userId);
+            }
+        }
+
+        savePosts();
+        renderPosts();
+        if (selectedPost?.id === postId) openModal(postId);
+    }
+
+    function toggleDislike(postId) {
+        const userId = getUserId();
+        const post = posts.find(p => p.id === postId);
+        if (!post) return;
+
+        const hasLiked = post.likedBy?.includes(userId);
+        const hasDisliked = post.dislikedBy?.includes(userId);
+
+        if (hasDisliked) {
+            post.dislikes -= 1;
+            post.dislikedBy = post.dislikedBy.filter(id => id !== userId);
+        } else {
+            post.dislikes += 1;
+            post.dislikedBy = [...(post.dislikedBy || []), userId];
+            
+            sendDiscordWebhook('dislike', {
+                postTitle: post.title,
+                totalDislikes: post.dislikes
+            });
+            
+            if (hasLiked) {
+                post.likes -= 1;
+                post.likedBy = post.likedBy.filter(id => id !== userId);
+            }
+        }
+
+        savePosts();
+        renderPosts();
+        if (selectedPost?.id === postId) openModal(postId);
+    }
+
+    function addComment(postId) {
+        const textarea = document.getElementById('commentInput');
+        const text = textarea.value.trim();
+        if (!text) return;
+
+        const post = posts.find(p => p.id === postId);
+        if (!post) return;
+
+        const comment = {
+            id: Date.now().toString(),
+            text: text,
+            timestamp: Date.now()
+        };
+
+        post.comments = [...(post.comments || []), comment];
+        
+        sendDiscordWebhook('comment', {
+            postTitle: post.title,
+            commentText: text,
+            totalComments: post.comments.length
+        });
+        
+        savePosts();
+        renderPosts();
+        openModal(postId);
+    }
+
+    function renderPosts() {
+        const grid = document.getElementById('postsGrid');
+        const userId = getUserId();
+        
+        grid.innerHTML = posts.map(post => {
+            const hasLiked = post.likedBy?.includes(userId);
+            const hasDisliked = post.dislikedBy?.includes(userId);
+            
+            return `
                 <div class="post-card" onclick="openModal('${post.id}')">
                     <img src="${post.imageUrl}" class="post-image" alt="${post.title}">
                     <div class="post-content">
                         <h3 class="post-title">${post.title}</h3>
                         <p class="post-description">${post.description}</p>
                         <div class="post-stats">
-                            <span class="stat">👍 ${post.likes}</span>
-                            <span class="stat">👎 ${post.dislikes}</span>
-                            <span class="stat">💬 ${post.comments.length}</span>
+                            <span class="stat" style="${hasLiked ? 'color: #4da3ff' : ''}">👍 ${post.likes}</span>
+                            <span class="stat" style="${hasDisliked ? 'color: #ff4444' : ''}">👎 ${post.dislikes}</span>
+                            <span class="stat">💬 ${post.comments?.length || 0}</span>
                         </div>
                     </div>
                 </div>
-            `).join('');
-        }
-
-        function openModal(id) {
-            const post = posts.find(p => p.id === id);
-            document.getElementById('modalHeader').innerHTML = `
-                <img src="${post.imageUrl}" class="modal-thumb">
-                <h2>${post.title}</h2>
             `;
-            document.getElementById('modalBody').innerHTML = `
-                <p>${post.description}</p>
-                <div class="action-buttons">
-                    <button class="action-btn">👍 ${post.likes}</button>
-                    <button class="action-btn">👎 ${post.dislikes}</button>
+        }).join('');
+    }
+
+    function openModal(id) {
+        const post = posts.find(p => p.id === id);
+        selectedPost = post;
+        const userId = getUserId();
+        const hasLiked = post.likedBy?.includes(userId);
+        const hasDisliked = post.dislikedBy?.includes(userId);
+        
+        document.getElementById('modalHeader').innerHTML = `
+            <img src="${post.imageUrl}" class="modal-thumb">
+            <div>
+                <h2 style="color: #ff0000; font-size: 32px; font-weight: 900; margin-bottom: 10px;">${post.title}</h2>
+                <p style="color: #888; font-size: 14px;">${new Date().toLocaleDateString('pt-BR')}</p>
+            </div>
+        `;
+        
+        document.getElementById('modalBody').innerHTML = `
+            <p style="color: #ccc; font-size: 18px; line-height: 1.8; margin-bottom: 40px;">${post.description}</p>
+            
+            <div class="action-buttons">
+                <button class="action-btn" onclick="toggleLike('${post.id}')" style="${hasLiked ? 'background: rgba(0, 100, 255, 0.3); border-color: #0064ff;' : ''}">
+                    👍 ${post.likes}
+                </button>
+                <button class="action-btn" onclick="toggleDislike('${post.id}')" style="${hasDisliked ? 'background: rgba(255, 0, 0, 0.3); border-color: #ff0000;' : ''}">
+                    👎 ${post.dislikes}
+                </button>
+            </div>
+
+            <div style="border-top: 2px solid rgba(255, 0, 0, 0.3); padding-top: 40px;">
+                <h3 style="font-size: 28px; font-weight: 900; margin-bottom: 30px; color: #ff0000;">
+                    💬 Comentários (${post.comments?.length || 0})
+                </h3>
+                
+                <div class="comment-form">
+                    <textarea id="commentInput" placeholder="Escreva um comentário anônimo..." rows="4"></textarea>
+                    <button class="btn-comment" onclick="addComment('${post.id}')">Comentar</button>
                 </div>
-            `;
-            document.getElementById('modal').classList.add('active');
-        }
 
-        function closeModal() {
-            document.getElementById('modal').classList.remove('active');
-        }
+                <div style="margin-top: 30px;">
+                    ${post.comments?.length > 0 
+                        ? post.comments.map(c => `
+                            <div class="comment">
+                                <p style="color: #ccc; margin-bottom: 12px; line-height: 1.6;">${c.text}</p>
+                                <p style="color: #666; font-size: 13px;">${new Date(c.timestamp).toLocaleString('pt-BR')}</p>
+                            </div>
+                        `).join('')
+                        : '<p style="text-align: center; color: #666; padding: 60px 20px;">Nenhum comentário ainda. Seja o primeiro!</p>'
+                    }
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('modal').classList.add('active');
+    }
 
-        renderPosts();
-    </script>
+    function closeModal() {
+        document.getElementById('modal').classList.remove('active');
+        selectedPost = null;
+    }
+
+    // Fechar modal ao clicar fora
+    document.getElementById('modal').addEventListener('click', (e) => {
+        if (e.target.id === 'modal') closeModal();
+    });
+
+    loadPosts();
+</script>
 </body>
 </html>
